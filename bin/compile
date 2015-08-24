@@ -12,7 +12,12 @@ install_ext () {
     if [[ -f "$ext_ini" ]]; then
         ext_so=$(php -r '$ini=parse_ini_file("'$ext_ini'"); echo $ext=$ini["zend_extension"]?:$ini["extension"]; exit((int)empty($ext));') # read .so name from .ini because e.g. opcache.so is named "zend-opcache"
         if [[ ! -f "$PHP_EXT_DIR/$ext_so" ]]; then
-            if [[ -f "$ext_build" ]]; then
+            if [[ ${ext} = "tideways" ]]; then
+                echo "- ${ext} (${reason}; downloading custom https://s3-eu-west-1.amazonaws.com/qafoo-profiler/downloads/tideways-heroku-${ext_dir}.tar.gz)" | indent
+                curl --silent --location "https://s3-eu-west-1.amazonaws.com/qafoo-profiler/downloads/tideways-heroku-${ext_dir}.tar.gz" | tar xz -C $BUILD_DIR/.heroku/php
+                echo "- ${ext} (${reason}; downloaded)" | indent
+                cp "${ext_ini}" "${BUILD_DIR}/.heroku/php/etc/php/conf.d"
+            elif [[ -f "$ext_build" ]]; then
                 curl --silent --location "${S3_URL}/extensions/${ext_dir}/${ext}.tar.gz" | tar xz -C $BUILD_DIR/.heroku/php
                 echo "- ${ext} (${reason}; downloaded)" | indent
                 cp "${ext_ini}" "${BUILD_DIR}/.heroku/php/etc/php/conf.d"
@@ -53,6 +58,7 @@ source $BP_DIR/bin/util/common.sh
 # for extensions that need special treatment
 source $BP_DIR/bin/util/newrelic.sh
 source $BP_DIR/bin/util/blackfire.sh
+source $BP_DIR/bin/util/tideways.sh
 
 # if this is set it prevents Git clones (e.g. for Composer installs from source) during the build in some circumstances, and it is set in SSH Git deploys to Heroku
 unset GIT_DIR
@@ -274,6 +280,9 @@ if [[ "${PHP_VERSION}" ]]; then
     # special treatment for Blackfire; we enable it if we detect a server id and a server token for it
     install_blackfire_ext
 
+    # need to package, because tideways is not a heroku binary
+    install_tideways_ext
+
     if [[ ${#exts[@]} -eq 0 || ! ${exts[*]} =~ "zend-opcache" ]]; then
         install_ext "zend-opcache" "automatic"
         exts+=("zend-opcache")
@@ -405,6 +414,8 @@ install_newrelic_daemon
 install_newrelic_userini
 
 install_blackfire_agent
+
+install_tideways_daemon
 
 if [[ ! -f "Procfile" ]]; then
     bindir=$(composer config bin-dir 2> /dev/null | tail -n 1) # tail, as composer echos outdated version warnings to STDOUT

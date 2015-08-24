@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Build Path: /app/.heroku/php/
+
+OUT_PREFIX=$1
+
+# fail hard
+set -o pipefail
+# fail harder
+set -eux
+
+dep_version="1.2.5"
+dep_dirname=tideways-daemon_${dep_version}
+dep_url=https://s3-eu-west-1.amazonaws.com/qafoo-profiler/downloads/tideways-daemon_linux_amd64-${dep_version}.tar.gz
+
+ext_version="2.0.8"
+ext_url=https://s3-eu-west-1.amazonaws.com/qafoo-profiler/downloads/tideways-php_${ext_version}_x86_64.tar.gz
+ext_dirname=tideways
+
+echo "-----> Packaging ext/tideways ${dep_version} (for Zend module API version ${ZEND_MODULE_API_VERSION:=20121212})..."
+
+ext_dir=${OUT_PREFIX}/lib/php/extensions/no-debug-non-zts-${ZEND_MODULE_API_VERSION}
+bin_dir=${OUT_PREFIX}/bin
+
+mkdir -p ${ext_dir}
+mkdir -p ${bin_dir}
+mkdir -p var/run/tideways
+
+curl -L ${dep_url} | tar xz
+
+pushd ${dep_dirname}
+cp tideways-daemon ${bin_dir}/tideways-daemon
+chmod a+x ${bin_dir}/tideways-daemon
+popd
+
+curl -L ${ext_url} | tar xz
+pushd ${ext_dirname}
+if [ "$ZEND_MODULE_API_VERSION" -eq "20131226" ]; then
+    cp tideways-php-5.6-x86_64.so ${ext_dir}/tideways.so
+    cp Tideways.php ${ext_dir}/Tideways.php
+elif [ "$ZEND_MODULE_API_VERSION" -eq "20121212" ]; then
+    cp tideways-php-5.5-x86_64.so ${ext_dir}/tideways.so
+    cp Tideways.php ${ext_dir}/Tideways.php
+fi
+popd
+
+echo "-----> Done."
