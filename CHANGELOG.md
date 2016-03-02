@@ -1,6 +1,12 @@
 # heroku-buildpack-php CHANGELOG
 
-## v93 (2016-02-??)
+## v94 (2016-02-26)
+
+### FIX
+
+- No web servers get selected when a `composer.lock` is missing [David Zuelke]
+
+## v93 (2016-02-26)
 
 ### ADD
 
@@ -12,6 +18,10 @@
 - Runtimes, extensions and web servers are now installed as fully self-contained Composer packages [David Zuelke]
 - Perform boot script startup checks without loading unnecessary PHP configs or extensions [David Zuelke]
 - ext-blackfire builds are now explicitly versioned (currently v1.9.1) [David Zuelke]
+- Append `composer config bin-dir` to `$PATH` for runtime [David Zuelke]
+- Check for lock file freshness using `composer validate` (#141) [David Zuelke]
+- Change PHP `expose_php` to `off`, Apache `ServerTokens` to `Prod` and Nginx `server_tokens` to `off` for builds (#91, #92) [David Zuelke]
+- Respect "provide", "replace" and "conflict" platform packages in dependencies and composer.json for platform package installs [David Zuelke]
 
 ### FIX
 
@@ -19,6 +29,7 @@
 - Manifest for ext-apcu/4.0.10 does not declare ext-apc replacement [David Zuelke]
 - Boot scripts exit with status 0 when given invalid flag as argument [David Zuelke]
 - Manifest for ext-memcached/2.2.0 declares wrong PHP requirement for PHP 5.6 build [David Zuelke]
+- Setting `NEW_RELIC_CONFIG_FILE` breaks HHVM builds (#149) [David Zuelke]
 
 ## v92 (2016-02-09)
 
